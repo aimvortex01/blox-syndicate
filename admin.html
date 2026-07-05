@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYNDICATE | COMMAND</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #000; color: #fff; font-family: 'Space Grotesk', sans-serif; }
+        .font-sync { font-family: 'Syncopate', sans-serif; }
+        .input-field { background: #080808; border: 1px solid #1a1a1a; padding: 12px; width: 100%; border-radius: 4px; outline: none; margin-bottom: 12px; font-size: 0.9rem; }
+        .input-field:focus { border-color: #00f2ff; box-shadow: 0 0 10px rgba(0, 242, 255, 0.1); }
+        .btn-primary { background: #fff; color: #000; font-weight: 700; padding: 12px; width: 100%; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;}
+        .btn-primary:active { transform: scale(0.98); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="p-4 relative">
+
+    <!-- Auth -->
+    <div id="auth-box" class="max-w-xs mx-auto mt-40 text-center">
+        <h1 class="font-sync text-sm mb-6 text-cyan-400 tracking-[5px]">TERMINAL_LOGIN</h1>
+        <input type="email" id="adm-email" class="input-field" placeholder="Access ID">
+        <input type="password" id="adm-pass" class="input-field" placeholder="Secure Code">
+        <button onclick="login()" class="btn-primary">Authenticate</button>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-ui" class="hidden max-w-xl mx-auto">
+        <div class="flex justify-between items-center mb-10 pb-4 border-b border-white/10">
+            <h2 class="font-sync text-xs">ROOT@SYNDICATE:~#</h2>
+            <button onclick="location.reload()" class="text-[10px] font-bold text-red-500 opacity-70 border border-red-500/30 px-3 py-1 rounded hover:bg-red-500/10 tracking-widest uppercase">DISCONNECT</button>
+        </div>
+
+        <!-- Upload Form Card -->
+        <div class="bg-[#050505] border border-white/5 p-6 rounded-lg mb-10">
+            <p class="text-[10px] text-gray-500 mb-4 tracking-[3px] font-sync">UPLOAD_INTEL</p>
+            <input type="text" id="name" class="input-field" placeholder="Full Name">
+            <input type="text" id="ign" class="input-field" placeholder="Roblox Game Name">
+            <input type="text" id="rid" class="input-field" placeholder="Roblox ID">
+            <textarea id="desc" class="input-field h-24" placeholder="Brief Description..."></textarea>
+            
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <select id="type" class="input-field mb-0">
+                    <option value="image">Image Format</option>
+                    <option value="video">Video Format</option>
+                </select>
+                <div class="relative">
+                    <input type="file" id="file" class="hidden" onchange="document.getElementById('file-btn').innerText = this.files.length > 0 ? '✔️ ' + this.files[0].name.substring(0,10) + '...' : 'SELECT FILE'">
+                    <button id="file-btn" onclick="document.getElementById('file').click()" class="w-full h-full border border-dashed border-white/20 rounded text-[10px] uppercase font-bold text-cyan-400 py-3">SELECT FILE</button>
+                </div>
+            </div>
+
+            <button id="up-btn" onclick="upload()" class="btn-primary">Transmit to Database</button>
+            <div id="prog" class="text-center mt-3 text-[10px] font-mono text-cyan-400 uppercase tracking-widest"></div>
+        </div>
+
+        <!-- Management List -->
+        <div id="manager" class="space-y-3 pb-20">
+            <!-- Items -->
+        </div>
+    </div>
+
+    <!-- Edit Modal Overlay -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-[#050505] border border-white/10 p-6 rounded-lg w-full max-w-md shadow-2xl">
+            <p class="text-[10px] text-cyan-500 mb-4 tracking-[3px] font-sync">EDIT_INTEL</p>
+            <input type="text" id="e-name" class="input-field" placeholder="Full Name">
+            <input type="text" id="e-ign" class="input-field" placeholder="Roblox Game Name">
+            <input type="text" id="e-rid" class="input-field" placeholder="Roblox ID">
+            <textarea id="e-desc" class="input-field h-24" placeholder="Brief Description..."></textarea>
+            
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <select id="e-type" class="input-field mb-0">
+                    <option value="image">Image Format</option>
+                    <option value="video">Video Format</option>
+                </select>
+                <div class="relative">
+                    <input type="file" id="e-file" class="hidden" onchange="document.getElementById('e-file-btn').innerText = this.files.length > 0 ? '✔️ ' + this.files[0].name.substring(0,8) + '...' : 'NEW MEDIA (OPT)'">
+                    <button id="e-file-btn" onclick="document.getElementById('e-file').click()" class="w-full h-full border border-dashed border-white/20 rounded text-[9px] uppercase font-bold text-gray-400 py-3">NEW MEDIA (OPT)</button>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="e-save-btn" onclick="saveEdit()" class="btn-primary flex-1 bg-cyan-500">UPDATE</button>
+                <button onclick="closeEdit()" class="btn-primary flex-1 !bg-transparent border border-white/20 !text-white">CANCEL</button>
+            </div>
+            <div id="e-prog" class="text-center mt-3 text-[10px] font-mono text-cyan-400 uppercase tracking-widest"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB7SiRkDHl-3X6N6OxmgFNt8YV61BCFsQ",
+            authDomain: "blox-syndicate.firebaseapp.com",
+            projectId: "blox-syndicate",
+            storageBucket: "blox-syndicate.firebasestorage.app",
+            messagingSenderId: "82487008727",
+            appId: "1:82487008727:web:931e81dd2de9ba1f8eff92"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Global variables for edit system
+        window.targetData = {};
+        window.currentEditId = null;
+
+        window.login = async () => {
+            try {
+                const email = document.getElementById('adm-email').value.trim().toLowerCase();
+                const pass = document.getElementById('adm-pass').value.trim();
+                await signInWithEmailAndPassword(auth, email, pass);
+                document.getElementById('auth-box').classList.add('hidden');
+                document.getElementById('admin-ui').classList.remove('hidden');
+                loadList();
+            } catch (e) { alert("Firebase Error: " + e.message); }
+        };
+
+        window.upload = async () => {
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+            const btn = document.getElementById('up-btn');
+            
+            if(!file) return alert("Select media intel.");
+
+            btn.disabled = true;
+            document.getElementById('prog').innerText = "Uploading to Cloudinary...";
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", "roblox_preset");
+
+                const mediaType = document.getElementById('type').value;
+                const uploadEndpoint = mediaType === 'video' 
+                    ? "https://api.cloudinary.com/v1_1/dwkm24zoo/video/upload" 
+                    : "https://api.cloudinary.com/v1_1/dwkm24zoo/image/upload";
+
+                const res = await fetch(uploadEndpoint, { method: "POST", body: formData });
+                const data = await res.json();
+                
+                if(data.secure_url) {
+                    document.getElementById('prog').innerText = "Syncing Database...";
+
+                    await addDoc(collection(db, "targets"), {
+                        name: document.getElementById('name').value,
+                        gameName: document.getElementById('ign').value,
+                        robloxID: document.getElementById('rid').value,
+                        description: document.getElementById('desc').value,
+                        mediaUrl: data.secure_url, 
+                        mediaType: mediaType,
+                        timestamp: serverTimestamp()
+                    });
+                    
+                    // Upload success - Reset form without reloading page
+                    document.getElementById('name').value = "";
+                    document.getElementById('ign').value = "";
+                    document.getElementById('rid').value = "";
+                    document.getElementById('desc').value = "";
+                    document.getElementById('file').value = "";
+                    document.getElementById('file-btn').innerText = "SELECT FILE";
+                    document.getElementById('prog').innerText = "Upload Complete!";
+                    
+                    setTimeout(() => document.getElementById('prog').innerText = "", 3000);
+                    btn.disabled = false;
+                    loadList();
+                } else {
+                    throw new Error("Cloudinary Upload Failed");
+                }
+            } catch (e) { 
+                alert("Upload Error: " + e.message); 
+                btn.disabled = false; 
+                document.getElementById('prog').innerText = "";
+            }
+        };
+
+        async function loadList() {
+            const q = query(collection(db, "targets"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            const list = document.getElementById('manager');
+            list.innerHTML = '<p class="text-[10px] font-sync text-gray-500 mb-4">ACTIVE_ASSETS</p>';
+            
+            window.targetData = {}; // clear old data
+
+            snap.forEach(d => {
+                const item = d.data();
+                window.targetData[d.id] = item; // save for edit system
+
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-[#080808] p-4 border border-white/5 rounded">
+                        <div>
+                            <p class="text-sm font-bold">${item.name}</p>
+                            <p class="text-[9px] text-gray-500 uppercase tracking-widest">${item.robloxID}</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="openEdit('${d.id}')" class="text-xs text-cyan-500 font-bold hover:text-cyan-300">EDIT</button>
+                            <button onclick="del('${d.id}')" class="text-xs text-red-500 font-bold hover:text-red-300">DEL</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.del = async (id) => {
+            if(confirm("Purge asset?")) {
+                await deleteDoc(doc(db, "targets", id));
+                loadList();
+            }
+        };
+
+        // Edit System Logic
+        window.openEdit = (id) => {
+            window.currentEditId = id;
+            const data = window.targetData[id];
+            
+            document.getElementById('e-name').value = data.name || "";
+            document.getElementById('e-ign').value = data.gameName || "";
+            document.getElementById('e-rid').value = data.robloxID || "";
+            document.getElementById('e-desc').value = data.description || "";
+            document.getElementById('e-type').value = data.mediaType || "image";
+            
+            document.getElementById('e-file').value = "";
+            document.getElementById('e-file-btn').innerText = "NEW MEDIA (OPT)";
+            document.getElementById('e-prog').innerText = "";
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.closeEdit = () => {
+            document.getElementById('edit-modal').classList.add('hidden');
+            window.currentEditId = null;
+        };
+
+        window.saveEdit = async () => {
+            const btn = document.getElementById('e-save-btn');
+            btn.disabled = true;
+            document.getElementById('e-prog').innerText = "UPDATING...";
+            
+            try {
+                const data = window.targetData[window.currentEditId];
+                let finalMediaUrl = data.mediaUrl;
+                let finalMediaType = document.getElementById('e-type').value;
+                
+                const newFile = document.getElementById('e-file').files[0];
+                
+                // If a new photo/video is selected, upload it first
+                if (newFile) {
+                    document.getElementById('e-prog').innerText = "UPLOADING NEW MEDIA...";
+                    const formData = new FormData();
+                    formData.append("file", newFile);
+                    formData.append("upload_preset", "roblox_preset");
+
+                    const uploadEndpoint = finalMediaType === 'video' 
+                        ? "https://api.cloudinary.com/v1_1/dwkm24zoo/video/upload" 
+                        : "https://api.cloudinary.com/v1_1/dwkm24zoo/image/upload";
+
+                    const res = await fetch(uploadEndpoint, { method: "POST", body: formData });
+                    const uploadData = await res.json();
+                    
+                    if(uploadData.secure_url) {
+                        finalMediaUrl = uploadData.secure_url;
+                    } else {
+                        throw new Error("Failed to upload new media.");
+                    }
+                }
+
+                document.getElementById('e-prog').innerText = "SYNCING DB...";
+
+                // Update Firestore
+                await updateDoc(doc(db, "targets", window.currentEditId), {
+                    name: document.getElementById('e-name').value,
+                    gameName: document.getElementById('e-ign').value,
+                    robloxID: document.getElementById('e-rid').value,
+                    description: document.getElementById('e-desc').value,
+                    mediaUrl: finalMediaUrl,
+                    mediaType: finalMediaType
+                });
+
+                closeEdit();
+                loadList();
+            } catch (e) {
+                alert("Edit Error: " + e.message);
+                document.getElementById('e-prog').innerText = "ERROR!";
+            } finally {
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
