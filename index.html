@@ -1,113 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BLOX SYNDICATE | CORE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --cyan: #00f2ff; --accent: #ff0055; --bg: #000000; }
-        body { 
-            background-color: var(--bg); 
-            color: #ffffff; 
-            font-family: 'Inter', sans-serif; 
-            overflow-x: hidden; 
-            text-transform: uppercase;
-        }
-        .font-sync { font-family: 'Syncopate', sans-serif; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Admin — Target Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-deep:#050510;--bg-secondary:#10102a;--bg-card:#131330;--bg-input:#0c0c20;
+  --accent-cyan:#00e5ff;--accent-purple:#a855f7;--accent-pink:#ff2d78;
+  --accent-green:#00ff88;--accent-red:#ef4444;
+  --text-primary:#f0f0ff;--text-secondary:#8888aa;--text-muted:#4a4a6a;
+  --border-subtle:rgba(255,255,255,0.06);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--bg-secondary);border-radius:2px}
 
-        /* Animated Background Mesh */
-        .bg-mesh {
-            position: fixed; inset: 0;
-            background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.03) 0%, transparent 70%);
-            z-index: -1; pointer-events: none;
-        }
+#loading{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-deep);transition:opacity .5s}
+#loading.hidden{opacity:0;pointer-events:none}
+.spinner{width:34px;height:34px;border:2px solid var(--border-subtle);border-top-color:var(--accent-cyan);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-lbl{margin-top:.8rem;font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase}
 
-        /* WIDE DOSSIER SPLASH BOX */
-        #splash {
-            position: fixed; inset: 0; z-index: 1000; background: #000;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .premium-box {
-            background: rgba(10, 10, 10, 0.8);
-            border-top: 1px solid rgba(0, 242, 255, 0.3);
-            border-bottom: 1px solid rgba(0, 242, 255, 0.3);
-            padding: 60px 20px;
-            text-align: center;
-            width: 100%;
-            backdrop-filter: blur(10px);
-        }
+#login{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:var(--bg-deep);padding:1.5rem}
+#login.show{display:flex}
+.login-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(0,229,255,.05) 0%,transparent 60%)}
+.login-card{position:relative;z-index:1;width:100%;max-width:380px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:16px;padding:2.5rem 2rem;text-align:center}
+.login-icon{font-size:2.5rem;margin-bottom:1rem}
+.login-title{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.35rem;color:var(--accent-cyan)}
+.login-sub{font-size:.82rem;color:var(--text-muted);margin-bottom:2rem}
 
-        /* Noticeable Typography */
-        .noticeable-title {
-            font-size: 1.4rem; font-weight: 900; letter-spacing: 4px; line-height: 1.3; margin-bottom: 30px;
-        }
+.field{margin-bottom:1rem;text-align:left}
+.field label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem}
+.field input,.field textarea{width:100%;padding:.85rem 1rem;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-primary);font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:500;outline:none;transition:border-color .2s}
+.field input:focus,.field textarea:focus{border-color:rgba(0,229,255,.4)}
+.field textarea{resize:vertical;min-height:80px}
 
-        /* ROUNDED CONTINUE BUTTON WITH ARROW */
-        .btn-continue {
-            background: #ffffff;
-            color: #000000;
-            padding: 14px 40px;
-            font-weight: 900;
-            font-size: 0.75rem;
-            letter-spacing: 2px;
-            border-radius: 9999px; /* Fully Rounded */
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.3s ease;
-        }
-        .btn-continue:active { transform: scale(0.95); background: var(--cyan); }
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 2rem;font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;border:1px solid transparent;border-radius:8px;cursor:pointer;transition:all .25s ease;width:100%}
+.btn-cyan{background:var(--accent-cyan);color:var(--bg-deep);border-color:var(--accent-cyan)}
+.btn-cyan:active{transform:scale(.97);box-shadow:0 0 20px rgba(0,229,255,.3)}
+.btn-cyan:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-danger{background:var(--accent-red);color:#fff;border-color:var(--accent-red)}
+.btn-ghost{background:transparent;color:var(--text-secondary);border-color:var(--border-subtle);width:auto;padding:.65rem 1.2rem;font-size:.65rem}
+.btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:.45rem .9rem;font-size:.62rem;width:auto}
+#loginErr{margin-top:1rem;font-size:.85rem;color:var(--accent-red);min-height:1.2em}
 
-        /* Dashboard Styles */
-        .glass-nav {
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            position: sticky; top: 0; z-index: 100;
-        }
+#dash{display:none;min-height:100vh}
+#dash.show{display:block;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-        /* Stat Rings */
-        .ring-svg { transform: rotate(-90deg); }
-        .ring-bg { stroke: rgba(255,255,255,0.05); }
-        .ring-fill { stroke-dasharray: 226; stroke-dashoffset: 226; transition: stroke-dashoffset 1.5s ease-out; }
+.admin-hdr{position:sticky;top:0;z-index:100;padding:.85rem 1.25rem;background:rgba(5,5,16,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
+.admin-hdr-title{font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-cyan)}
+.logout-btn{font-family:'Rajdhani',sans-serif;font-size:.78rem;font-weight:600;color:var(--accent-pink);background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.2);border-radius:6px;padding:.45rem .9rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase}
 
-        /* Dossier Card */
-        .dossier-card {
-            background: #0a0a0a;
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 8px; overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-        
-        .hidden-ui { display: none; opacity: 0; }
-    </style>
+.a-stats{display:flex;gap:.6rem;padding:1rem 1.25rem;overflow-x:auto}
+.a-stat{flex:1;min-width:0;display:flex;align-items:center;gap:.5rem;padding:.65rem .8rem;background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:8px}
+.a-stat-val{font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:var(--accent-cyan)}
+.a-stat-lbl{font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+
+.section{padding:0 1.25rem 1.5rem}
+.section-head{display:flex;align-items:center;gap:.75rem;padding:1rem 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.section-head h2{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-cyan)}
+.chevron{margin-left:auto;color:var(--text-muted);transition:transform .3s ease;font-size:.8rem}
+.chevron.open{transform:rotate(180deg)}
+.section-body{overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1)}
+.section-body.collapsed{max-height:0!important}
+
+/* FILE ZONE */
+.file-zone{border:2px dashed rgba(0,229,255,.2);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1rem}
+.file-zone:active{border-color:var(--accent-cyan);background:rgba(0,229,255,.04)}
+.file-zone-icon{font-size:2rem;opacity:.5;margin-bottom:.4rem}
+.file-zone-text{font-size:.82rem;color:var(--text-muted)}
+.file-zone-hint{font-size:.7rem;color:var(--text-muted);margin-top:.3rem;opacity:.6}
+.file-zone.has-files{border-color:var(--accent-green);background:rgba(0,255,136,.04)}
+.file-zone.has-files .file-zone-text{color:var(--accent-green)}
+.file-zone input{display:none}
+
+/* MULTI PREVIEW GRID */
+.preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem}
+.preview-grid:empty{display:none}
+.preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--bg-secondary)}
+.preview-item img,.preview-item video{width:100%;height:100%;object-fit:cover;display:block}
+.preview-remove{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.85);border:none;color:#fff;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.preview-count{text-align:center;font-size:.78rem;color:var(--text-muted);margin-bottom:1rem;font-weight:600}
+
+/* PROGRESS */
+.progress-wrap{margin-bottom:1rem;display:none}
+.progress-wrap.show{display:block}
+.progress-bar-bg{height:4px;background:var(--bg-secondary);border-radius:2px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple));border-radius:2px;width:0%;transition:width .3s}
+.progress-text{font-size:.72rem;color:var(--text-muted);margin-top:.35rem;text-align:right;font-family:'Orbitron',sans-serif;letter-spacing:.05em}
+
+.success-banner{display:none;margin-bottom:1rem;padding:1rem 1.2rem;border-radius:10px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2)}
+.success-banner.show{display:block}
+.success-banner .sb-text{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:600;color:var(--accent-green);letter-spacing:.08em;text-transform:uppercase}
+
+/* ENTRIES */
+.entries{padding:0 1.25rem 4rem}
+.entry-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden;margin-bottom:1rem;display:flex;animation:entryIn .35s ease forwards;opacity:0}
+@keyframes entryIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.entry-media{width:90px;min-height:90px;flex-shrink:0;background:var(--bg-secondary);overflow:hidden;position:relative}
+.entry-media img,.entry-media video{width:100%;height:100%;object-fit:cover;display:block}
+.entry-media-count{position:absolute;bottom:4px;right:4px;padding:.15rem .45rem;background:rgba(0,0,0,.7);border-radius:10px;font-family:'Orbitron',sans-serif;font-size:.55rem;font-weight:600;color:var(--accent-cyan)}
+.entry-body{flex:1;padding:.85rem;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.entry-name{font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-game{font-size:.78rem;color:var(--accent-purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-id{font-family:'Orbitron',sans-serif;font-size:.7rem;color:var(--accent-cyan);opacity:.8;margin-top:.15rem}
+.entry-desc{font-size:.75rem;color:var(--text-muted);margin-top:.2rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.entry-actions{display:flex;gap:.5rem;margin-top:.5rem}
+.entry-btn{font-family:'Rajdhani',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:.35rem .7rem;border-radius:5px;cursor:pointer;border:1px solid;transition:all .2s}
+.entry-btn-edit{color:var(--accent-cyan);border-color:rgba(0,229,255,.25);background:rgba(0,229,255,.06)}
+.entry-btn-edit:active{background:rgba(0,229,255,.15)}
+.entry-btn-del{color:var(--accent-red);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06)}
+.entry-btn-del:active{background:rgba(239,68,68,.15)}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;padding:0}
+.modal-overlay.show{display:flex}
+@media(min-width:600px){.modal-overlay{align-items:center;padding:1.5rem}}
+.modal-card{width:100%;max-width:500px;max-height:90vh;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:16px 16px 0 0;padding:1.75rem 1.5rem 2rem;animation:slideUp .35s ease}
+@media(min-width:600px){.modal-card{border-radius:16px;animation:scaleIn .3s ease}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes scaleIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.modal-title{font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-cyan)}
+.modal-close{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:8px;cursor:pointer;color:var(--text-secondary);font-size:1.1rem}
+.modal-close:disabled{opacity:.35;cursor:not-allowed}
+.modal-actions{display:flex;gap:.75rem;margin-top:1.25rem}
+.modal-actions .btn{flex:1}
+.del-modal-card{max-width:360px;padding:2rem 1.5rem;text-align:center;border-radius:16px}
+.del-icon{font-size:2.5rem;margin-bottom:.75rem}
+.del-msg{font-size:.95rem;color:var(--text-secondary);margin-bottom:1.5rem;line-height:1.5}
+
+/* EDIT CURRENT MEDIA */
+.edit-media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem}
+.edit-media-grid:empty{display:none}
+.edit-media-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--bg-secondary)}
+.edit-media-item img,.edit-media-item video{width:100%;height:100%;object-fit:cover;display:block}
+.edit-media-item.removed{opacity:.3}
+.edit-media-item.removed::after{content:'REMOVED';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:.5rem;letter-spacing:.1em;color:var(--accent-red);background:rgba(0,0,0,.5)}
+.edit-media-toggle{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:#fff}
+.edit-media-toggle.keep{background:rgba(239,68,68,.8)}
+.edit-media-toggle.unkeep{background:rgba(0,255,136,.8)}
+
+#toasts{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:5000;display:flex;flex-direction:column;align-items:center;gap:.5rem;pointer-events:none;width:calc(100% - 2rem);max-width:380px}
+.toast{padding:.85rem 1.25rem;border-radius:10px;font-size:.85rem;font-weight:500;transform:translateY(20px);opacity:0;transition:all .3s ease;pointer-events:auto;width:100%;text-align:center}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-ok{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.25);color:var(--accent-green)}
+.toast-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:var(--accent-red)}
+
+.mb-1{margin-bottom:1rem}
+.empty-a{text-align:center;padding:3rem 1rem}
+.empty-a .ea-icon{font-size:2.5rem;opacity:.4;margin-bottom:.5rem}
+.empty-a .ea-txt{font-family:'Orbitron',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--text-muted)}
+.sec-divider{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+.sec-divider .line{flex:1;height:1px}
+.sec-divider .line:first-child{background:linear-gradient(90deg,var(--accent-purple),transparent)}
+.sec-divider .line:last-child{background:linear-gradient(270deg,var(--accent-purple),transparent)}
+.sec-divider h2{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-purple);white-space:nowrap}
+
+@media(max-width:360px){
+  .entry-media{width:72px;min-height:72px}
+  .preview-grid{grid-template-columns:repeat(2,1fr)}
+  .edit-media-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
 </head>
 <body>
-    <div class="bg-mesh"></div>
 
-    <!-- Splash Screen -->
-    <section id="splash">
-        <div class="premium-box">
-            <p class="text-[9px] text-cyan-500 mb-4 tracking-[6px] font-bold">SYSTEM ACCESS GRANTED</p>
-            <h1 class="noticeable-title font-sync">
-                YOU ARE ONE OF OUR <br>
-                <span class="text-cyan-400">FOOLISH VICTIMS</span> TAP CONTINUE
-            </h1>
-            <button onclick="unlock()" class="btn-continue font-sync">
-                CONTINUE 
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-            </button>
+<div id="loading"><div class="spinner"></div><div class="spin-lbl">Authenticating</div></div>
+
+<div id="login">
+  <div class="login-bg"></div>
+  <div class="login-card">
+    <div class="login-icon">&#128274;</div>
+    <h1 class="login-title">Admin Access</h1>
+    <p class="login-sub">Authorized personnel only</p>
+    <form id="loginForm" autocomplete="off">
+      <div class="field"><label>Email</label><input type="email" id="loginEmail" required autocomplete="email" placeholder="admin@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="loginPass" required autocomplete="current-password" placeholder="Enter password"></div>
+      <button type="submit" class="btn btn-cyan">Authenticate</button>
+    </form>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<div id="dash">
+  <header class="admin-hdr">
+    <div class="admin-hdr-title">Admin Panel</div>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+  </header>
+
+  <div class="a-stats">
+    <div class="a-stat"><span class="a-stat-val" id="aTotal">0</span><span class="a-stat-lbl">Targets</span></div>
+    <div class="a-stat"><span class="a-stat-val" id="aPhotos">0</span><span class="a-stat-lbl">Photos</span></div>
+    <div class="a-stat"><span class="a-stat-val" id="aVideos">0</span><span class="a-stat-lbl">Videos</span></div>
+  </div>
+
+  <!-- UPLOAD SECTION -->
+  <div class="section" id="uploadSection">
+    <div class="section-head" id="uploadToggle">
+      <h2>&#11014;&#65039; Add New Target</h2>
+      <span class="chevron open" id="chevUp">&#9660;</span>
+    </div>
+    <div class="section-body" id="uploadBody">
+      <div class="success-banner" id="successBanner">
+        <div class="sb-text">&#10004;&#65039; Target uploaded successfully!</div>
+      </div>
+      <form id="uploadForm" autocomplete="off">
+        <div class="field"><label>Real Name</label><input type="text" id="uName" required placeholder="John Doe"></div>
+        <div class="field"><label>Roblox Game Name</label><input type="text" id="uGame" required placeholder="xXGamerXx"></div>
+        <div class="field"><label>Roblox ID</label><input type="text" id="uRoblox" required placeholder="123456789"></div>
+        <div class="field"><label>Description</label><textarea id="uDesc" required placeholder="Target details..."></textarea></div>
+
+        <div class="file-zone" id="uZone" onclick="document.getElementById('uFile').click()">
+          <div class="file-zone-icon">&#128247;</div>
+          <div class="file-zone-text">Tap to select photos or videos</div>
+          <div class="file-zone-hint">Select multiple files — Max 50MB each</div>
+          <input type="file" id="uFile" accept="image/*,video/*" multiple>
         </div>
-    </section>
 
-    <!-- Dashboard -->
-    <div id="main-content" class="hidden-ui max-w-2xl mx-auto px-6 py-12">
-        <header class="flex justify-between items-center mb-16">
-            <div>
-                <h1 class="font-sync text-xl font-black tracking-tighter">BLOX SYNDICATE</h1>
+        <div class="preview-count" id="uCount"></div>
+        <div class="preview-grid" id="uGrid"></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="uClearBtn" style="display:none;margin-bottom:1rem" onclick="clearUploadFiles()">Clear All</button>
+
+        <div class="progress-wrap" id="uProgress">
+          <div class="progress-bar-bg"><div class="progress-bar" id="uBar"></div></div>
+          <div class="progress-text" id="uPct">0%</div>
+        </div>
+
+        <button type="submit" class="btn btn-cyan" id="uSubmit">Upload Target</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ENTRIES -->
+  <div class="entries">
+    <div class="sec-divider">
+      <div class="line"></div><h2>All Entries</h2><div class="line"></div>
+    </div>
+    <div id="entriesList"></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 class="modal-title">Edit Target</h3>
+      <div class="modal-close" id="editCloseBtn" onclick="closeEdit()">&#10005;</div>
+    </div>
+    <form id="editForm" autocomplete="off">
+      <input type="hidden" id="eId">
+      <div class="field"><label>Real Name</label><input type="text" id="eName" required></div>
+      <div class="field"><label>Roblox Game Name</label><input type="text" id="eGame" required></div>
+      <div class="field"><label>Roblox ID</label><input type="text" id="eRoblox" required></div>
+      <div class="field"><label>Description</label><textarea id="eDesc" required></textarea></div>
+
+      <label style="font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.4rem">Current Media (tap X to remove)</label>
+      <div class="edit-media-grid" id="eMediaGrid"></div>
+
+      <label style="font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.4rem">Add More Media</label>
+      <div class="file-zone" id="eZone" onclick="document.getElementById('eFile').click()" style="padding:1.2rem .8rem">
+        <div class="file-zone-text">Tap to add more photos/videos</div>
+        <input type="file" id="eFile" accept="image/*,video/*" multiple>
+      </div>
+
+      <div class="preview-count" id="eCount"></div>
+      <div class="preview-grid" id="eGrid"></div>
+
+      <div class="progress-wrap" id="eProgress">
+        <div class="progress-bar-bg"><div class="progress-bar" id                <h1 class="font-sync text-xl font-black tracking-tighter">BLOX SYNDICATE</h1>
                 <div class="flex items-center gap-2 mt-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
                     <p id="status" class="text-[9px] font-bold text-gray-500 tracking-[2px]">SCANNING...</p>
