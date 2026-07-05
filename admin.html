@@ -1,113 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYNDICATE | COMMAND</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Syncopate:wght@700&display=swap" rel="stylesheet">
-    <style>
-        body { background: #000; color: #fff; font-family: 'Space Grotesk', sans-serif; }
-        .font-sync { font-family: 'Syncopate', sans-serif; }
-        .input-field { background: #080808; border: 1px solid #1a1a1a; padding: 12px; width: 100%; border-radius: 4px; outline: none; margin-bottom: 12px; font-size: 0.9rem; }
-        .input-field:focus { border-color: #00f2ff; box-shadow: 0 0 10px rgba(0, 242, 255, 0.1); }
-        .btn-primary { background: #fff; color: #000; font-weight: 700; padding: 12px; width: 100%; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;}
-        .btn-primary:active { transform: scale(0.98); }
-        .hidden { display: none !important; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Target Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-deep:#050510;--bg-secondary:#10102a;--bg-card:#131330;
+  --accent-cyan:#00e5ff;--accent-purple:#a855f7;--accent-pink:#ff2d78;
+  --accent-green:#00ff88;--text-primary:#f0f0ff;
+  --text-secondary:#8888aa;--text-muted:#4a4a6a;
+  --border-subtle:rgba(255,255,255,0.06);
+  --header-h:48px;--tabbar-h:60px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--bg-secondary);border-radius:2px}
+
+/* LOADING */
+#loading{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-deep);transition:opacity .6s}
+#loading.hidden{opacity:0;pointer-events:none}
+.spinner{width:36px;height:36px;border:2px solid var(--border-subtle);border-top-color:var(--accent-cyan);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-label{margin-top:1rem;font-family:'Orbitron',sans-serif;font-size:.65rem;letter-spacing:.25em;color:var(--text-muted);text-transform:uppercase}
+
+/* LANDING */
+#landing{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg-deep);transition:opacity .8s ease,transform .8s cubic-bezier(.4,0,.2,1)}
+#landing.exit{opacity:0;transform:translateY(-40px) scale(1.02);pointer-events:none}
+.landing-bg{position:absolute;inset:0;background:
+  linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px),
+  radial-gradient(ellipse at 25% 50%,rgba(0,229,255,.07) 0%,transparent 50%),
+  radial-gradient(ellipse at 75% 25%,rgba(168,85,247,.05) 0%,transparent 50%),
+  radial-gradient(ellipse at 50% 90%,rgba(255,45,120,.04) 0%,transparent 40%);
+  background-size:50px 50px,50px 50px,100% 100%,100% 100%,100% 100%;
+  animation:bgDrift 12s ease-in-out infinite alternate}
+@keyframes bgDrift{0%{opacity:.7;transform:scale(1)}100%{opacity:1;transform:scale(1.03)}}
+#landing::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:1}
+.particles{position:absolute;inset:0;overflow:hidden;z-index:0}
+.particles span{position:absolute;bottom:-10px;width:2px;height:2px;background:var(--accent-cyan);border-radius:50%;box-shadow:0 0 8px var(--accent-cyan);animation:floatUp var(--dur) var(--del) linear infinite;opacity:0;left:var(--x)}
+@keyframes floatUp{0%{transform:translateY(0);opacity:0}8%{opacity:.7}85%{opacity:.5}100%{transform:translateY(-110vh);opacity:0}}
+.landing-content{position:relative;z-index:2;text-align:center;padding:2rem;max-width:560px}
+.landing-icon{font-size:3.5rem;margin-bottom:1.5rem;animation:iconPulse 3s ease-in-out infinite;filter:drop-shadow(0 0 25px rgba(255,45,120,.4))}
+@keyframes iconPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.landing-text{font-family:'Orbitron',sans-serif;font-size:clamp(1.3rem,5.5vw,2.1rem);font-weight:700;line-height:1.45;text-transform:uppercase;letter-spacing:.04em;opacity:0;animation:revealText 1s ease forwards .6s}
+.landing-text .hl{color:var(--accent-pink);text-shadow:0 0 15px rgba(255,45,120,.4),0 0 50px rgba(255,45,120,.15);display:inline-block}
+.landing-text .glitch{animation:glitch 4s ease-in-out infinite 2s}
+@keyframes glitch{0%,88%,100%{transform:translate(0)}90%{transform:translate(-3px,1px);text-shadow:3px 0 var(--accent-cyan),-3px 0 var(--accent-pink)}93%{transform:translate(2px,-1px);text-shadow:-2px 0 var(--accent-cyan),2px 0 var(--accent-pink)}96%{transform:translate(-1px,2px)}}
+@keyframes revealText{0%{opacity:0;transform:translateY(25px);filter:blur(8px)}100%{opacity:1;transform:translateY(0);filter:blur(0)}}
+.landing-sub{font-size:.85rem;color:var(--text-muted);margin-top:1rem;letter-spacing:.2em;text-transform:uppercase;opacity:0;animation:revealText 1s ease forwards 1.1s}
+.landing-btn{margin-top:2.5rem;padding:1rem 3rem;font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--accent-cyan);background:transparent;border:1px solid rgba(0,229,255,.5);cursor:pointer;position:relative;overflow:hidden;opacity:0;animation:revealText 1s ease forwards 1.6s;transition:all .3s}
+.landing-btn::after{content:'';position:absolute;inset:0;background:var(--accent-cyan);opacity:0;transition:opacity .3s}
+.landing-btn:active{color:var(--bg-deep);box-shadow:0 0 25px rgba(0,229,255,.4)}
+.landing-btn:active::after{opacity:1}
+.landing-btn span{position:relative;z-index:1}
+
+/* DASHBOARD */
+#dashboard{display:none;height:100vh;overflow:hidden}
+#dashboard.show{display:block;animation:fadeInDash .6s ease forwards}
+@keyframes fadeInDash{from{opacity:0}to{opacity:1}}
+
+.header{position:sticky;top:0;z-index:100;height:var(--header-h);padding:0 1.25rem;background:rgba(5,5,16,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;gap:.65rem}
+.hdr-dot{width:6px;height:6px;background:var(--accent-green);border-radius:50%;animation:dotGlow 2s ease-in-out infinite}
+@keyframes dotGlow{0%,100%{opacity:1;box-shadow:0 0 6px var(--accent-green)}50%{opacity:.35}}
+.hdr-title{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-cyan);text-shadow:0 0 12px rgba(0,229,255,.25)}
+
+/* PAGES CONTAINER — SWIPE */
+.pages-wrap{height:calc(100vh - var(--header-h) - var(--tabbar-h));overflow:hidden;position:relative}
+.pages-scroll{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;scrollbar-width:none}
+.pages-scroll::-webkit-scrollbar{display:none}
+.page{flex:0 0 100%;width:100%;scroll-snap-align:start;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:1rem}
+
+/* HOME PAGE */
+.home-hero{text-align:center;padding:2.5rem 1.5rem 1rem}
+.home-emoji{font-size:2.8rem;margin-bottom:.75rem;filter:drop-shadow(0 0 20px rgba(0,229,255,.3))}
+.home-title{font-family:'Orbitron',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-cyan);margin-bottom:.3rem}
+.home-sub{font-size:.82rem;color:var(--text-muted);letter-spacing:.08em}
+
+.stats{display:flex;justify-content:center;gap:1.25rem;padding:2rem 1.25rem 1rem;flex-wrap:wrap}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:.6rem}
+.stat-ring{position:relative;width:88px;height:88px}
+.stat-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.ring-track{fill:none;stroke:var(--bg-secondary);stroke-width:5}
+.ring-fill{fill:none;stroke-width:5;stroke-linecap:round;stroke-dasharray:251.33;stroke-dashoffset:251.33;transition:stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1)}
+.stat-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:700}
+.stat-lbl{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);text-align:center}
+
+/* TARGETS PAGE */
+.targets-page{padding:1.25rem}
+.sec-hdr{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+.sec-line{flex:1;height:1px}
+.sec-line:first-child{background:linear-gradient(90deg,var(--accent-cyan),transparent)}
+.sec-line:last-child{background:linear-gradient(270deg,var(--accent-cyan),transparent)}
+.sec-title{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-cyan);white-space:nowrap;text-shadow:0 0 10px rgba(0,229,255,.2)}
+
+.grid{display:grid;grid-template-columns:1fr;gap:1.25rem}
+@media(min-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+
+.card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:14px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .5s ease,transform .5s ease}
+.card.vis{opacity:1;transform:translateY(0)}
+
+/* PHOTO CAROUSEL */
+.card-carousel{position:relative;width:100%;background:var(--bg-secondary)}
+.carousel-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.carousel-track::-webkit-scrollbar{display:none}
+.carousel-slide{flex:0 0 100%;width:100%;aspect-ratio:16/10;scroll-snap-align:start;position:relative;overflow:hidden}
+.carousel-slide img,.carousel-slide video{width:100%;height:100%;object-fit:cover;display:block}
+.carousel-badge{position:absolute;top:10px;right:10px;padding:.3rem .6rem;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:20px;font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:600;color:var(--accent-cyan);letter-spacing:.05em}
+.play-btn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);cursor:pointer}
+.play-icon{width:40px;height:40px;border:2px solid rgba(255,255,255,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.play-icon::after{content:'';display:block;width:0;height:0;margin-left:3px;border-style:solid;border-width:7px 0 7px 12px;border-color:transparent transparent transparent rgba(255,255,255,.9)}
+.play-btn.hide{display:none}
+
+.carousel-dots{display:flex;justify-content:center;align-items:center;gap:5px;padding:10px 0 6px}
+.c-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);opacity:.4;transition:all .3s ease}
+.c-dot.active{background:var(--accent-cyan);opacity:1;width:18px;border-radius:3px}
+
+.card-info{padding:1rem 1.1rem}
+.card-name{font-family:'Orbitron',sans-serif;font-size:.92rem;font-weight:700;margin-bottom:.15rem}
+.card-game{font-size:.85rem;font-weight:600;color:var(--accent-purple);margin-bottom:.6rem}
+.card-id-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .65rem;background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:6px;margin-bottom:.6rem}
+.card-id-label{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)}
+.card-id-val{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:500;color:var(--accent-cyan)}
+.card-desc{font-size:.85rem;line-height:1.55;color:var(--text-secondary)}
+
+.empty{text-align:center;padding:4rem 2rem}
+.empty-icon{font-size:3rem;opacity:.45;margin-bottom:.75rem}
+.empty-txt{font-family:'Orbitron',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--text-muted)}
+
+/* TAB BAR */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tabbar-h);z-index:100;background:rgba(5,5,16,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;cursor:pointer;padding:.5rem 0;-webkit-tap-highlight-color:transparent;transition:color .3s;position:relative;color:var(--text-muted)}
+.tab-btn svg{width:22px;height:22px;transition:all .3s}
+.tab-btn .tab-label{font-family:'Orbitron',sans-serif;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;transition:color .3s}
+.tab-btn.active{color:var(--accent-cyan)}
+.tab-btn.active svg{filter:drop-shadow(0 0 6px rgba(0,229,255,.5))}
+.tab-btn::after{content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--accent-cyan);border-radius:1px;transition:width .3s ease}
+.tab-btn.active::after{width:24px}
+
+@media(max-width:360px){
+  .stat-ring{width:72px;height:72px}
+  .stat-num{font-size:1.1rem}
+  .landing-text{font-size:1.2rem}
+}
+</style>
 </head>
-<body class="p-4 relative">
+<body>
 
-    <!-- Auth -->
-    <div id="auth-box" class="max-w-xs mx-auto mt-40 text-center">
-        <h1 class="font-sync text-sm mb-6 text-cyan-400 tracking-[5px]">TERMINAL_LOGIN</h1>
-        <input type="email" id="adm-email" class="input-field" placeholder="Access ID">
-        <input type="password" id="adm-pass" class="input-field" placeholder="Secure Code">
-        <button onclick="login()" class="btn-primary">Authenticate</button>
-    </div>
+<div id="loading"><div class="spinner"></div><div class="spinner-label">Initializing</div></div>
 
-    <!-- Admin Panel -->
-    <div id="admin-ui" class="hidden max-w-xl mx-auto">
-        <div class="flex justify-between items-center mb-10 pb-4 border-b border-white/10">
-            <h2 class="font-sync text-xs">ROOT@SYNDICATE:~#</h2>
-            <button onclick="location.reload()" class="text-[10px] font-bold text-red-500 opacity-70 border border-red-500/30 px-3 py-1 rounded hover:bg-red-500/10 tracking-widest uppercase">DISCONNECT</button>
+<!-- LANDING -->
+<div id="landing">
+  <div class="landing-bg"></div>
+  <div class="particles">
+    <span style="--x:8%;--dur:14s;--del:0s"></span>
+    <span style="--x:18%;--dur:11s;--del:2.5s"></span>
+    <span style="--x:30%;--dur:16s;--del:1s"></span>
+    <span style="--x:42%;--dur:13s;--del:4s"></span>
+    <span style="--x:55%;--dur:15s;--del:0.5s"></span>
+    <span style="--x:65%;--dur:12s;--del:3s"></span>
+    <span style="--x:78%;--dur:17s;--del:1.5s"></span>
+    <span style="--x:88%;--dur:10s;--del:5s"></span>
+    <span style="--x:50%;--dur:16s;--del:3.5s"></span>
+    <span style="--x:12%;--dur:11s;--del:7s"></span>
+  </div>
+  <div class="landing-content">
+    <div class="landing-icon">&#127919;</div>
+    <h1 class="landing-text">You are one of our<br><span class="hl glitch">foolish victims</span></h1>
+    <p class="landing-sub">Your activity has been recorded</p>
+    <button class="landing-btn" id="continueBtn"><span>Continue</span></button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header class="header">
+    <div class="hdr-dot"></div>
+    <div class="hdr-title">Target Tracker</div>
+  </header>
+
+  <div class="pages-wrap">
+    <div class="pages-scroll" id="pagesScroll">
+
+      <!-- PAGE 1: HOME -->
+      <section class="page" id="pageHome">
+        <div class="home-hero">
+          <div class="home-emoji">&#128065;</div>
+          <div class="home-title">We are watching</div>
+          <div class="home-sub">Your every move is being tracked</div>
         </div>
-
-        <!-- Upload Form Card -->
-        <div class="bg-[#050505] border border-white/5 p-6 rounded-lg mb-10">
-            <p class="text-[10px] text-gray-500 mb-4 tracking-[3px] font-sync">UPLOAD_INTEL</p>
-            <input type="text" id="name" class="input-field" placeholder="Full Name">
-            <input type="text" id="ign" class="input-field" placeholder="Roblox Game Name">
-            <input type="text" id="rid" class="input-field" placeholder="Roblox ID">
-            <textarea id="desc" class="input-field h-24" placeholder="Brief Description..."></textarea>
-            
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <select id="type" class="input-field mb-0">
-                    <option value="image">Image Format</option>
-                    <option value="video">Video Format</option>
-                </select>
-                <div class="relative">
-                    <input type="file" id="file" class="hidden" onchange="document.getElementById('file-btn').innerText = this.files.length > 0 ? '✔️ ' + this.files[0].name.substring(0,10) + '...' : 'SELECT FILE'">
-                    <button id="file-btn" onclick="document.getElementById('file').click()" class="w-full h-full border border-dashed border-white/20 rounded text-[10px] uppercase font-bold text-cyan-400 py-3">SELECT FILE</button>
-                </div>
+        <div class="stats">
+          <div class="stat-item">
+            <div class="stat-ring">
+              <svg viewBox="0 0 96 96"><circle class="ring-track" cx="48" cy="48" r="40"/><circle class="ring-fill" id="ringTargets" cx="48" cy="48" r="40" style="stroke:var(--accent-cyan);filter:drop-shadow(0 0 6px rgba(0,229,255,.4))"/></svg>
+              <div class="stat-num" id="numTargets">0</div>
             </div>
-
-            <button id="up-btn" onclick="upload()" class="btn-primary">Transmit to Database</button>
-            <div id="prog" class="text-center mt-3 text-[10px] font-mono text-cyan-400 uppercase tracking-widest"></div>
-        </div>
-
-        <!-- Management List -->
-        <div id="manager" class="space-y-3 pb-20">
-            <!-- Items -->
-        </div>
-    </div>
-
-    <!-- Edit Modal Overlay -->
-    <div id="edit-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-[#050505] border border-white/10 p-6 rounded-lg w-full max-w-md shadow-2xl">
-            <p class="text-[10px] text-cyan-500 mb-4 tracking-[3px] font-sync">EDIT_INTEL</p>
-            <input type="text" id="e-name" class="input-field" placeholder="Full Name">
-            <input type="text" id="e-ign" class="input-field" placeholder="Roblox Game Name">
-            <input type="text" id="e-rid" class="input-field" placeholder="Roblox ID">
-            <textarea id="e-desc" class="input-field h-24" placeholder="Brief Description..."></textarea>
-            
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <select id="e-type" class="input-field mb-0">
-                    <option value="image">Image Format</option>
-                    <option value="video">Video Format</option>
-                </select>
-                <div class="relative">
-                    <input type="file" id="e-file" class="hidden" onchange="document.getElementById('e-file-btn').innerText = this.files.length > 0 ? '✔️ ' + this.files[0].name.substring(0,8) + '...' : 'NEW MEDIA (OPT)'">
-                    <button id="e-file-btn" onclick="document.getElementById('e-file').click()" class="w-full h-full border border-dashed border-white/20 rounded text-[9px] uppercase font-bold text-gray-400 py-3">NEW MEDIA (OPT)</button>
-                </div>
+            <div class="stat-lbl">Targets</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-ring">
+              <svg viewBox="0 0 96 96"><circle class="ring-track" cx="48" cy="48" r="40"/><circle class="ring-fill" id="ringPhotos" cx="48" cy="48" r="40" style="stroke:var(--accent-purple);filter:drop-shadow(0 0 6px rgba(168,85,247,.4))"/></svg>
+              <div class="stat-num" id="numPhotos">0</div>
             </div>
-
-            <div class="flex gap-3">
-                <button id="e-save-btn" onclick="saveEdit()" class="btn-primary flex-1 bg-cyan-500">UPDATE</button>
-                <button onclick="closeEdit()" class="btn-primary flex-1 !bg-transparent border border-white/20 !text-white">CANCEL</button>
+            <div class="stat-lbl">Photos</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-ring">
+              <svg viewBox="0 0 96 96"><circle class="ring-track" cx="48" cy="48" r="40"/><circle class="ring-fill" id="ringVideos" cx="48" cy="48" r="40" style="stroke:var(--accent-pink);filter:drop-shadow(0 0 6px rgba(255,45,120,.4))"/></svg>
+              <div class="stat-num" id="numVideos">0</div>
             </div>
-            <div id="e-prog" class="text-center mt-3 text-[10px] font-mono text-cyan-400 uppercase tracking-widest"></div>
+            <div class="stat-lbl">Videos</div>
+          </div>
         </div>
+      </section>
+
+      <!-- PAGE 2: TARGETS -->
+      <section class="page" id="pageTargets">
+        <div class="targets-page">
+          <div class="sec-hdr">
+            <div class="sec-line"></div>
+            <h2 class="sec-title">Target Achieved</h2>
+            <div class="sec-line"></div>
+          </div>
+          <div class="grid" id="grid"></div>
+        </div>
+      </section>
+
     </div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" id="tab0" onclick="switchTab(0)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2"/>
+      </svg>
+      <span class="tab-label">Home</span>
+    </button>
+    <button class="tab-btn" id="tab1" onclick="switchTab(1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+      </svg>
+      <span class="tab-label">Targets</span>
+    </button>
+  </nav>
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBB7SiRkDHl-3X6N6OxmgFNt8YV61BCFsQ",
-            authDomain: "blox-syndicate.firebaseapp.com",
-            projectId: "blox-syndicate",
-            storageBucket: "blox-syndicate.firebasestorage.app",
-            messagingSenderId: "82487008727",
-            appId: "1:82487008727:web:931e81dd2de9ba1f8eff92"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+<script>
+// =============================================
+// FIREBASE CONFIG — REPLACE WITH YOUR VALUES
+// =============================================
+var firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
 
-        // Global variables for edit system
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+// =============================================
+// SILENT VISIT LOG
+// =============================================
+db.collection('visits').add({
+  ts: firebase.firestore.FieldValue.serverTimestamp(),
+  ua: navigator.userAgent,
+  scr: innerWidth + 'x' + innerHeight
+}).catch(function(){});
+
+// =============================================
+// LANDING → DASHBOARD
+// =============================================
+var CIRC = 2 * Math.PI * 40;
+
+document.getElementById('continueBtn').addEventListener('click', function() {
+  document.getElementById('landing').classList.add('exit');
+  setTimeout(function() {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('dashboard').classList.add('show');
+    animateRings();
+  }, 800);
+});
+
+// =============================================
+// TAB SYSTEM — APPLE STYLE SWIPE
+// =============================================
+var pagesScroll = document.getElementById('pagesScroll');
+var totalPages = 2;
+var currentTab = 0;
+
+function switchTab(index) {
+  if (index < 0 || index >= totalPages) return;
+  currentTab = index;
+  pagesScroll.scrollTo({ left: index * pagesScroll.clientWidth, behavior: 'smooth' });
+  updateTabUI(index);
+}
+
+function updateTabUI(index) {
+  for (var i = 0; i < totalPages; i++) {
+    var btn = document.getElementById('tab' + i);
+    if (btn) btn.classList.toggle('active', i === index);
+  }
+}
+
+// Sync tabs on swipe
+var scrollTimer = null;
+pagesScroll.addEventListener('scroll', function() {
+  if (scrollTimer) clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(function() {
+    var idx = Math.round(pagesScroll.scrollLeft / pagesScroll.clientWidth);
+    if (idx !== currentTab) {
+      currentTab = idx;
+      updateTabUI(idx);
+    }
+  }, 50);
+});
+
+// =============================================
+// NUMBER COUNTER
+// =============================================
+function countUp(el, target) {
+  var dur = 1200, start = performance.now(), from = parseInt(el.textContent) || 0;
+  (function tick(now) {
+    var p = Math.min((now - start) / dur, 1);
+    var ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (target - from) * ease);
+    if (p < 1) requestAnimationFrame(tick);
+  })(start);
+}
+
+// =============================================
+// RING ANIMATION
+// =============        // Global variables for edit system
         window.targetData = {};
         window.currentEditId = null;
 
