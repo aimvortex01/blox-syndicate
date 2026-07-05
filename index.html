@@ -93,8 +93,8 @@
         <div class="premium-box">
             <p class="text-[9px] text-cyan-500 mb-4 tracking-[6px] font-bold">SYSTEM ACCESS GRANTED</p>
             <h1 class="noticeable-title font-sync">
-                YOU ARE ONE OF OUR TAP COUNTINUE <br>
-                <span class="text-cyan-400">FOOLISH VICTIMS</span>
+                YOU ARE ONE OF OUR <br>
+                <span class="text-cyan-400">FOOLISH VICTIMS</span> TAP CONTINUE
             </h1>
             <button onclick="unlock()" class="btn-continue font-sync">
                 CONTINUE 
@@ -183,6 +183,70 @@
                 setTimeout(() => {
                     const status = document.getElementById('status');
                     status.innerText = "SYSTEM_SCANNED";
+                    status.style.color = "#00f2ff";
+                }, 1000);
+
+                logVisit();
+                renderData();
+            }});
+        }
+
+        async function logVisit() {
+            try { await addDoc(collection(db, "visits"), { time: serverTimestamp() }); } catch(e){}
+        }
+
+        function renderData() {
+            const q = query(collection(db, "targets"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const feed = document.getElementById('target-feed');
+                feed.innerHTML = '';
+                let t=0, p=0, v=0;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    t++; data.mediaType === 'video' ? v++ : p++;
+                    
+                    feed.innerHTML += `
+                        <div class="dossier-card shadow-2xl">
+                            <div class="relative h-80 sm:h-[450px]">
+                                ${data.mediaType === 'video' 
+                                    // Yahan autoplay hataya hai aur controls add kiye hain
+                                    ? `<video src="${data.mediaUrl}" controls playsinline class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"></video>`
+                                    : `<img src="${data.mediaUrl}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700">`
+                                }
+                                <!-- pointer-events-none add kiya hai taaki video controls click ho sakein -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none"></div>
+                                <div class="absolute bottom-6 left-6 pointer-events-none">
+                                    <p class="text-[9px] font-bold text-cyan-400 tracking-[3px] mb-2 uppercase">ROBLOX ID: ${data.robloxID}</p>
+                                    <h4 class="font-sync text-sm sm:text-base font-bold tracking-widest uppercase">ROBLOX ID NAME :- ${data.name}</h4>
+                                </div>
+                            </div>
+                            <div class="p-8">
+                                <div class="flex items-center gap-3 mb-6">
+                                    <span class="text-[9px] font-black text-white bg-white/10 px-3 py-2 rounded uppercase tracking-widest">ROBLOX NAME : ${data.gameName}</span>
+                                </div>
+                                <div class="text-gray-400 text-sm font-medium leading-relaxed lowercase tracking-wide first-letter:uppercase">
+                                    <span class="text-white font-bold uppercase text-[10px] tracking-widest block mb-2">DESCRIPTION :-</span>
+                                    ${data.description}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('stat-t').innerText = t;
+                document.getElementById('stat-p').innerText = p;
+                document.getElementById('stat-v').innerText = v;
+                
+                // Animate Rings
+                document.getElementById('ring-t').style.strokeDashoffset = 226 - (226 * (t / 50));
+                document.getElementById('ring-p').style.strokeDashoffset = 226 - (226 * (p / 50));
+                document.getElementById('ring-v').style.strokeDashoffset = 226 - (226 * (v / 50));
+            });
+        }
+    </script>
+</body>
+</html>
                     status.style.color = "#00f2ff";
                 }, 1000);
 
